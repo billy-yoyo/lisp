@@ -3,14 +3,22 @@
 UNKNOWN_VAR = object()
 
 class TranslationContext:
-    def __init__(self, vars=None, parent=None):
+    def __init__(self, vars=None, shallow=None, capture=None, parent=None):
         self.parent = parent
-        self.vars = {}
+        self.vars = vars or {}
+        self.shallow = shallow or {}
+        self.capture = capture or []
 
     def set(self, name, var):
-        self.vars[name] = var
+        if len(self.capture) == 0 or name in self.capture:
+            self.vars[name] = var
+        elif self.parent:
+            self.parent.set(name, var)
 
     def get(self, name):
+        if name in self.shallow:
+            return self.shallow[name]
+
         ctx = self
         while ctx is not None:
             if name in ctx.vars:
@@ -18,14 +26,43 @@ class TranslationContext:
             ctx = ctx.parent
         return UNKNOWN_VAR
 
+    def get_shallow(self, name):
+        if name in self.shallow:
+            return self.shallow[name]
+
+        if name in self.vars:
+            return self.vars[name]
+
+    def bubble(self, name, var):
+        ctx = self
+        while ctx is not None:
+            if name in ctx.capture:
+                ctx.set(name, var)
+            ctx = ctx.parent
+
 
 class TranslationWalker:
-    def __init__(self, name):
+    def __init__(self, name, config=None, global_header=None):
         self.name = name
         self.visitors = {}
+        self._config = config or {}
+        self.global_header = global_header
 
-    def create_translator(self, vars=None):
-        return Translator(self, TranslationContext(vars=vars))
+    def merge(self, walker):
+        self.visitors.update(walker.visitors)
+        self._config.update(walker._config)
+
+    def set_config(self, key, value):
+        self._config[key] = value
+
+    def config(self, key, default=None):
+        if key in self._config:
+            return self._config[key]
+        else:
+            return default
+
+    def create_translator(self, vars=None, capture=None, shallow=None):
+        return Translator(self, TranslationContext(vars=vars, capture=capture, shallow=shallow))
 
     def add_visitor(self, ast_type, visitor):
         self.visitors[ast_type] = visitor
@@ -61,10 +98,18 @@ class Translator:
         self.walker = walker
         self.ctx = ctx
 
-    def with_ctx(self, vars=None):
-        child_ctx = TranslationContext(vars=vars, parent=self.ctx)
+    def config(self, key, default=None):
+        return self.walker.config(key, default=default)
+
+    def with_ctx(self, vars=None, capture=None, shallow=None):
+        child_ctx = TranslationContext(vars=vars, capture=capture, shallow=shallow, parent=self.ctx)
         return Translator(self.walker, child_ctx)
 
     def translate(self, ast):
         return self.walker.visit(ast, self)
+
+    def translate_all(self, asts):
+        lines = [self.translate(ast) for ast in asts]
+        header = self.walker.global_header or ""
+        return header + "\n" + ";\n".join(lines) + ";"
 

@@ -8,7 +8,8 @@ from tokenizer import (
 from ast import read_module
 from scope import Scope
 from lisplib import NATIVES
-import sys
+from runargs import run_args
+from translate import translators
 
 tokenizer = Tokenizer()
 tokenizer.add_consumer("open", word_consumer("("))
@@ -27,19 +28,41 @@ global_scope.add_natives(NATIVES)
 
 def compile(content):
     tokens = [token for token in tokenizer.consume_all(content) if token.name != "whitespace"]
-    print(" ".join(token.name for token in tokens))
     stream = TokenStream(tokens)
     return read_module(stream)
 
-def run(content):
+def run_code(content):
     module = compile(content)
-    print("\n".join(str(statement) for statement in module))
     global_scope.execute_module(module)
-
 
 def run_file(filename):
     with open(filename, "r") as f:
-        text = f.read()
-    run(text)
+        content = f.read()
+    run_code(content)
 
-run_file(sys.argv[1])
+def run_translate(filename, target, outfile=None):
+    with open(filename, "r") as f:
+        content = f.read()
+
+    if not target in translators:
+        raise ValueError(f"unknown translation target {target}")
+
+    module = compile(content)
+    output = translators[target].translate_all(module)
+
+    if outfile:
+        with open(outfile, "w") as f:
+            f.write(output)
+    else:
+        print(output)
+
+def run(args):
+    if "translate" in args.named:
+        run_translate(args.positional[0], args.named["translate"], outfile=args.named.get("out", None))
+    else:
+        run_file(args.positional[0])
+
+run(run_args({
+    "t": "translate",
+    "o": "out"
+}))

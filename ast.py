@@ -93,4 +93,9 @@ def read_module(stream):
             statements.append(read_value(stream))
     except EOFError:
         pass
+
+    if not stream.done():
+        token = stream.next()
+        raise ValueError(f"encountered error on token {token.name} `{token.content}` at line, char: {token.pointer}")
+
     return statements

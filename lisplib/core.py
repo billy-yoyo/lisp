@@ -47,5 +47,6 @@ def return_value(scope, args):
 
 NATIVES = {
     "def": def_func,
-    "do": do
+    "do": do,
+    "return": return_value
 }
