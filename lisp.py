@@ -8,8 +8,9 @@ from tokenizer import (
 from ast import read_module
 from scope import Scope
 from lisplib import NATIVES
-from runargs import run_args
+from argproc import ArgProc
 from translate import translators
+import sys
 
 tokenizer = Tokenizer()
 tokenizer.add_consumer("open", word_consumer("("))
@@ -57,12 +58,14 @@ def run_translate(filename, target, outfile=None):
         print(output)
 
 def run(args):
-    if "translate" in args.named:
-        run_translate(args.positional[0], args.named["translate"], outfile=args.named.get("out", None))
+    if args.translate is not None:
+        run_translate(args[0], args.translate, outfile=args.out)
     else:
-        run_file(args.positional[0])
+        run_file(args[0])
 
-run(run_args({
-    "t": "translate",
-    "o": "out"
-}))
+argproc = ArgProc()
+argproc.add_parameter("translate", "t")
+argproc.add_parameter("out", "o")
+args = argproc.read(sys.argv[1:])
+
+run(args)

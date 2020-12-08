@@ -1,0 +1,12 @@
+
+
+(macro (
+    (name) \( ((args) ,)* (args) \)
+) (
+    ($name $args)
+))
+
+// translates
+name(a, b, c)
+// to
+(name a b c)

@@ -9,5 +9,3 @@
     )
     (print "escaped message")
 )
-
-(obj (head 1) (tail (obj (head 2) (tail (obj (head 3))))))
