@@ -6,6 +6,14 @@ class ReturnedValue:
     def __init__(self, value):
         self.value = value
 
+
+def macro(scope, args):
+    assert len(args) == 2, f"macro expected 2 args, {len(args)} were given"
+    pattern, template = args
+
+
+
+
 def def_func(scope, args):
     assert len(args) == 3, f"def expected 3 args, {len(args)} were given"
     name, func_args, body = args
@@ -48,5 +56,6 @@ def return_value(scope, args):
 NATIVES = {
     "def": def_func,
     "do": do,
-    "return": return_value
+    "return": return_value,
+    "macro": macro
 }
