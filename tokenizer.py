@@ -53,9 +53,10 @@ class Tokenizer:
 
 
 class TokenStream:
-    def __init__(self, tokens):
+    def __init__(self, tokens, parser=None, pointer=0):
         self.tokens = tokens
-        self.pointer = 0
+        self.pointer = pointer
+        self.parser = parser
 
     def next(self):
         if self.pointer < len(self.tokens):
@@ -65,12 +66,28 @@ class TokenStream:
         else:
             return None
 
+    def last(self):
+        return self.tokens[self.pointer - 1]
+
     def revert(self):
         self.pointer -= 1
         return self
 
     def done(self):
         return self.pointer >= len(self.tokens)
+
+    def branch(self):
+        return TokenStream(self.tokens, parser=self.parser, pointer=self.pointer)
+
+    def merge(self, branch):
+        self.pointer = branch.pointer
+
+    def attempt_parse(self, name):
+        branch = self.branch()
+        result = self.parser.attempt_parse(name, branch)
+        if result is not None:
+            self.merge(branch)
+        return result
 
     def __str__(self):
         return " ".join(str(token) for token in self.tokens[self.pointer:])
@@ -94,6 +111,16 @@ def regex_consumer(pattern):
     
     return consumer
 
+class TokenParser:
+    def __init__(self):
+        self.parsers = {}
 
-
+    def attempt_parse(self, name, stream):
+        try:
+            if name in self.parsers:
+                return self.parsers[name](stream)
+        except:
+            pass
+        return None
+    
     
