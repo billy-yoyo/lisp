@@ -8,9 +8,9 @@ def token_pattern(scope, args):
         assert arg.type == "tuple" and len(arg.args) == 2, f"key/value pair must have exactly 2 values, {len(arg.args)} were given"
         key, value = arg.args
 
-        assert key.type in ["word", "string"], "key must be a word or string"
-        assert value.type in ["word", "string"], "value must be a word or string"
-        assert key.value in ["name", "content"], "key must be one of 'type' or 'content'"
+        assert key.type in ["word", "string"], f"key must be a word or string, not {key.type}"
+        assert value.type in ["word", "string"], f"value must be a word or string, not {value.type}"
+        assert key.value in ["name", "content"], f"key must be one of 'name' or 'content', not {key.value}"
         data[key.value] = value.value
 
     return TokenPattern(**data)

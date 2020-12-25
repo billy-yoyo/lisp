@@ -3,9 +3,10 @@ from tokenizer import (
     word_consumer, 
     wordlist_consumer,
     regex_consumer,
-    TokenStream
+    TokenStream,
+    TokenParser
 )
-from ast import read_module
+from ast import parser
 from scope import Scope
 from lisplib import NATIVES
 from argproc import ArgProc
@@ -29,8 +30,8 @@ global_scope.add_natives(NATIVES)
 
 def compile(content):
     tokens = [token for token in tokenizer.consume_all(content) if token.name != "whitespace"]
-    stream = TokenStream(tokens)
-    return read_module(stream)
+    stream = TokenStream(tokens, parser=parser)
+    return stream.parse("module")
 
 def run_code(content):
     module = compile(content)

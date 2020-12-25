@@ -82,12 +82,30 @@ class TokenStream:
     def merge(self, branch):
         self.pointer = branch.pointer
 
-    def attempt_parse(self, name):
+    def parse(self, name):
+        if self.parser is None:
+            raise ValueError("stream has no associated parser")
+            
         branch = self.branch()
-        result = self.parser.attempt_parse(name, branch)
-        if result is not None:
+        try:
+            result = self.parser.parse(name, branch)
+        except Exception as e:
+            raise e
+        else:
             self.merge(branch)
-        return result
+            return result
+
+    def attempt_parse(self, name):
+        if self.parser is not None:
+            branch = self.branch()
+            result = self.parser.attempt_parse(name, branch)
+            if result is not None:
+                self.merge(branch)
+            return result
+        return None
+
+    def attempt_macro(self):
+        return self.parser.attempt_macro(self)
 
     def __str__(self):
         return " ".join(str(token) for token in self.tokens[self.pointer:])
@@ -114,6 +132,28 @@ def regex_consumer(pattern):
 class TokenParser:
     def __init__(self):
         self.parsers = {}
+        self.macros = []
+
+    def add_parser(self, name, parser):
+        self.parsers[name] = parser
+
+    def parser(self, name):
+        def decorator(func):
+            self.add_parser(name, func)
+            return func
+        return decorator
+
+    def add_macro(self, macro):
+        self.macros.append(macro)
+
+    def attempt_macro(self, stream):
+        for macro in self.macros:
+            branch = stream.branch()
+            match = macro.pattern.read_match(stream)
+            if match is not None:
+                stream.merge(branch)
+                return macro.template.create(match)
+        return None
 
     def attempt_parse(self, name, stream):
         try:
@@ -123,4 +163,5 @@ class TokenParser:
             pass
         return None
     
-    
+    def parse(self, name, stream):
+        return self.parsers[name](stream)

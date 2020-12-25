@@ -1,4 +1,4 @@
-
+from scope import UNKNOWN_VAR
 """
 patterns:
  - token pattern, matches a single token by type and/or content
@@ -6,7 +6,7 @@ patterns:
 
 
 examples:
-(seq (read (token (type word)) as name) \( (read many (seq (read (ast value) into args) ,)) (ready (ast value) into args) \))
+(seq (read (token (type word)) as name) \( (read many (seq (read (ast value) into args) ,)) (read (ast value) into args) \))
 
 """
 
@@ -16,6 +16,11 @@ class MacroMatch:
 
     def __init__(self):
         self.data = {}
+
+    def get(self, name):
+        if name in self.data:
+            return self.data[name]
+        return UNKNOWN_VAR
 
     def store_as(self, name, value):
         self.data[name] = (MacroMatch.AS, value)
