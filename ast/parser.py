@@ -65,13 +65,13 @@ def read_word(stream, token):
 
 @parser.parser("value")
 def read_value(stream):
-    token = assert_next(stream)
-
     # first attempt to read any macros
     if stream.parser is not None:
         result = stream.attempt_macro()
         if result is not None:
             return result
+
+    token = assert_next(stream)
 
     if token.name == "int":
         return read_int(stream, token)

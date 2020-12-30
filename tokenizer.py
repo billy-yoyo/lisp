@@ -6,6 +6,13 @@ class Token:
         self.content = content
         self.pointer = pointer
 
+    def copy(self, name=None, content=None, pointer=None):
+        return Token(
+            name=name or self.name,
+            content=content or self.content,
+            pointer=pointer or self.pointer
+        )
+
     def __str__(self):
         return self.name
 
@@ -149,8 +156,9 @@ class TokenParser:
     def attempt_macro(self, stream):
         for macro in self.macros:
             branch = stream.branch()
-            match = macro.pattern.read_match(stream)
+            match = macro.pattern.read_match(branch)
             if match is not None:
+                print(f"macro matched with {match}")
                 stream.merge(branch)
                 return macro.template.create(match)
         return None

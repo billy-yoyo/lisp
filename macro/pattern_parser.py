@@ -61,4 +61,7 @@ pattern_scope.define("read", read_pattern)
 pattern_scope.define("seq", sequence_pattern)
 
 def parse_pattern(pattern_ast):
+    if pattern_ast.type == "word":
+        return TokenPattern(content=pattern_ast.value)
+
     return pattern_scope.execute_statement(pattern_ast)

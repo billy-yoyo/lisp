@@ -1,13 +1,6 @@
 from lisplib import NATIVES
 from scope import Scope, UNKNOWN_VAR
 from ast import ASTTuple
-"""
-
-(
-    (ast ($name $args))
-)
-
-"""
 
 class ASTTemplatePlaceholder:
     type = "template_placeholder"
@@ -37,7 +30,11 @@ class ASTTemplate:
             return [ast]
     
     def create(self, match):
-        return self.replace_templates(match, self.template_ast).args 
+        print(f"creating template")
+        return self.replace_templates(match, self.template_ast) 
+
+    def __str__(self):
+        return str(self.template_ast)
 
 def tuple_mutator(scope, tuple_ast):
     new_args = []
@@ -55,7 +52,7 @@ def tuple_mutator(scope, tuple_ast):
             interpolate = False
         elif arg.type == "word" and arg.value == "\\":
             escaped = True
-        elif arg.type == "word" and arg.value == "$":
+        elif arg.type == "word" and arg.value == "&":
             interpolate = True
         elif arg.type == "tuple":
             new_args.append(tuple_mutator(scope, arg))

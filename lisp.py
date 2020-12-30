@@ -14,6 +14,7 @@ from translate import translators
 import sys
 
 tokenizer = Tokenizer()
+tokenizer.add_consumer("escaped_char", regex_consumer(r"^\\."))
 tokenizer.add_consumer("open", word_consumer("("))
 tokenizer.add_consumer("close", word_consumer(")"))
 tokenizer.add_consumer("true", word_consumer("true"))
@@ -28,13 +29,26 @@ tokenizer.add_consumer("whitespace", regex_consumer(r"^\s+"))
 global_scope = Scope()
 global_scope.add_natives(NATIVES)
 
+def filter_tokens(tokens):
+    new_tokens = []
+    for token in tokens:
+        if token.name == "whitespace":
+            continue
+        elif token.name == "escaped_char":
+            token = token.copy(name="word", content=token.content[1:])
+        new_tokens.append(token)
+    return new_tokens
+
 def compile(content):
-    tokens = [token for token in tokenizer.consume_all(content) if token.name != "whitespace"]
+    tokens = filter_tokens(tokenizer.consume_all(content))
     stream = TokenStream(tokens, parser=parser)
     return stream.parse("module")
 
 def run_code(content):
     module = compile(content)
+    print(f"--- module ---")
+    print("\n".join(str(x) for x in module))
+    print("--------------")
     global_scope.execute_module(module)
 
 def run_file(filename):

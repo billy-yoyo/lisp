@@ -19,4 +19,9 @@ def create_macro(args):
     if not isinstance(template, ASTTemplate):
         raise ValueError("invalid macro template, must return ast template")
 
+    print(f"created macro for:")
+    print(pattern)
+    print("to:")
+    print(template)
+
     return Macro(pattern, template)

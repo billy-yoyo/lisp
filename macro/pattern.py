@@ -1,4 +1,5 @@
 from scope import UNKNOWN_VAR
+import json
 """
 patterns:
  - token pattern, matches a single token by type and/or content
@@ -19,7 +20,7 @@ class MacroMatch:
 
     def get(self, name):
         if name in self.data:
-            return self.data[name]
+            return self.data[name][1]
         return UNKNOWN_VAR
 
     def store_as(self, name, value):
@@ -34,9 +35,16 @@ class MacroMatch:
         for key, entry in match.data.items():
             type, value = entry
             if type == MacroMatch.INTO:
-                self.store_into(key, value)
+                for sub_value in value:
+                    self.store_into(key, sub_value)
             else:
                 self.store_as(key, value)
+        
+    def __str__(self):
+        data = {
+            name: str(v) if f == MacroMatch.AS else [str(x) for x in v] for name, (f, v) in self.data.items()
+        }
+        return json.dumps(data)
 
 
 class MacroPattern:
@@ -68,6 +76,14 @@ class TokenPattern(MacroPattern):
             return stream.last()
         return None
 
+    def __str__(self):
+        if self.name and self.content:
+            return f"token({self.name}, `{self.content}`)"
+        elif self.name:
+            return f"token({self.name})"
+        else:
+            return f"token(`{self.content}`)"
+
 
 class ASTPattern(MacroPattern):
     def __init__(self, name=None):
@@ -83,6 +99,9 @@ class ASTPattern(MacroPattern):
         if self.matches(stream):
             return self._cached
         return None
+
+    def __str__(self):
+        return f"ast({self.name})"
 
 
 class ReadPattern(MacroPattern):
@@ -108,10 +127,13 @@ class ReadPattern(MacroPattern):
         match = self.pattern.read_match(stream)
         if match is not None and self.save_name is not None:
             data = MacroMatch()
-            if self.save_type == MacroMatch.AS:
-                data.store_as(self.save_name, data)
+
+            if isinstance(match, MacroMatch):
+                data.merge(match)
+            elif self.save_type == MacroMatch.AS:
+                data.store_as(self.save_name, match)
             elif self.save_type == MacroMatch.INTO:
-                data.store_into(self.save_name, data)
+                data.store_into(self.save_name, match)
             return data
         return match
 
@@ -133,6 +155,11 @@ class ReadPattern(MacroPattern):
         else:
             return self.read_single(stream)
 
+    def __str__(self):
+        return f"read({self.pattern})"
+
+
+
 
 class SequencePattern(MacroPattern):
     def __init__(self, patterns):
@@ -153,6 +180,7 @@ class SequencePattern(MacroPattern):
                 data.merge(match)
         return data
 
-
+    def __str__(self):
+        return " ".join(str(p) for p in self.patterns)
 
 
